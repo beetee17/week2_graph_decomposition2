@@ -8,7 +8,6 @@ class Vertex():
         self.index = index
 
         self.visited = 0
-        self.component = None
 
         self.pre = None
         self.post = None
@@ -27,13 +26,11 @@ class Graph():
             self.adj[vertices[a-1]].append(vertices[b-1])
                     
         self.vertices = vertices
-        self.components = 0
         self.acyclic = True
 
         self.clock = 1
     
     def previst(self, v):
-        v.component = self.components
         v.pre = self.clock
         self.clock += 1
         
@@ -67,8 +64,7 @@ class Graph():
             # explore each vertex (and its neighbours)
             if v.visited == 0:
                 self.explore(v)
-                # once all neighbours of the vertex have been explored, they form a single connected component
-                self.components += 1
+
 
 
 def acyclic(graph):
