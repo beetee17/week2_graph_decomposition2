@@ -5,6 +5,7 @@ import sys
 sys.setrecursionlimit(200000)
 
 from collections import defaultdict
+from queue import LifoQueue
 
 class Vertex():
     def __init__(self, index):
@@ -34,6 +35,7 @@ class Graph():
         self.acyclic = True
 
         self.clock = 1
+        self.postOrder = LifoQueue(maxsize=len(vertices))
     
     def previst(self, v):
         v.scc = self.num_scc
@@ -45,6 +47,7 @@ class Graph():
         self.clock += 1
 
         v.visited = 1
+        self.postOrder.put_nowait(v)
 
     def explore(self, v):
 
@@ -70,14 +73,18 @@ class Graph():
             # explore each vertex (and its neighbours)
             if v.visited == 0:
                 self.explore(v)
+
+        return self.postOrder
      
 
     def find_strongly_connected_components(self, reverse_postorder):
+
         for v in self.vertices:
             v.visited = 0
 
-        for v in reverse_postorder:
-            
+        while not reverse_postorder.empty():
+            v = reverse_postorder.get_nowait()
+            # print(v.post)
             if v.visited == 0:
                 self.explore(v)
                 # once all neighbours of the vertex have been explored, they form a single strongly connected component
@@ -86,7 +93,7 @@ class Graph():
         self.num_scc -= 1
 
 
-def number_of_strongly_connected_components(edges, vertices):
+def number_of_strongly_connected_components(edges, reverse_edges, vertices):
     # The vertex with the single largest post order number in the entire graph has to come from a component with no other components pointing to it. That vertex needs to be the source component
     # the reverse graph and the orig graph have the same strongly connected componenets (scc)
     # however, source component of reverse graph are sink componente of orig graph
@@ -95,18 +102,12 @@ def number_of_strongly_connected_components(edges, vertices):
     graph = Graph(edges, vertices)
 
     # let the reverse_graph be the graph obtained by flipping the direction of all its edges
-    reverse_edges = []
-
-    for (a, b) in edges:
-        reverse_edges.append([b, a])
-        reverse_graph = Graph(reverse_edges, vertices)
+    reverse_graph = Graph(reverse_edges, vertices)
 
 
     # perfrom DFS on reverse graph to populate post visit indices for each vertex
-    reverse_graph.DFS()
-
-    # sort by descending post visit index
-    reverse_postorder = [v for v in sorted(reverse_graph.vertices, key=lambda x: x.post, reverse=True)]
+    # the postvisit block pushes each vertex into a stack such that getting each item ensures descending post order
+    reverse_postorder = reverse_graph.DFS()
 
     # a sink scc has no outgoing edges from the component
     # if v is in a sink component, explore(v) will find all the vertices reachable from v, which is the definition of a scc
@@ -124,5 +125,6 @@ if __name__ == '__main__':
 
     data = data[2:]
     edges = list(zip(data[0:(2 * m):2], data[1:(2 * m):2]))
+    reverse_edges = list(zip(data[1:(2 * m):2], data[0:(2 * m):2]))
 
-    print(number_of_strongly_connected_components(edges, vertices))
+    print(number_of_strongly_connected_components(edges, reverse_edges, vertices))
